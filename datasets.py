@@ -9,7 +9,17 @@ from sklearn.model_selection import train_test_split
 
 seed = 3535999445
 
+def imdb():
+    from pathlib import Path
+    raise NotImplementedError
+
 def _rocstories(path):
+    """Returns 4 lists :
+        st: input sentences
+        ct1: first answer
+        ct2: second answer
+        y: index of the good answer
+    """
     with open(path, encoding='utf_8') as f:
         f = csv.reader(f)
         st = []
