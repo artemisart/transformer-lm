@@ -302,7 +302,7 @@ class DoubleHeadModel(nn.Module):
 def load_openai_pretrained_model(model, n_ctx=-1, n_special=-1, n_transfer=12, n_embd=768, path='./model/',
                                  path_names='./'):
     # Load weights from TF model
-    print("Loading weights...")
+    print("Loading weights...", end=" ")
     names = json.load(open(path_names + 'parameters_names.json'))
     shapes = json.load(open(path + 'params_shapes.json'))
     offsets = np.cumsum([np.prod(shape) for shape in shapes])
@@ -358,6 +358,8 @@ def load_openai_pretrained_model(model, n_ctx=-1, n_special=-1, n_transfer=12, n
             e.args += (pointer.shape, ip.shape)
             raise
         pointer.data = torch.from_numpy(ip)
+    
+    print("ok")
 
 
 class dotdict(dict):
