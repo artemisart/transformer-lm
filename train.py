@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.utils import shuffle
 
 from analysis import rocstories as rocstories_analysis
-from datasets import rocstories
+from datasets import rocstories, imdb
 from model_pytorch import DoubleHeadModel, load_openai_pretrained_model
 from opt import OpenAIAdam
 from text_utils import TextEncoder
@@ -143,7 +143,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_dir', type=str, default='save/')
     parser.add_argument('--data_dir', type=str, default='data/')
     parser.add_argument('--submission_dir', type=str, default='submission/')
-    parser.add_argument('--submit', action='store_true')
+    parser.add_argument('--submit', action='store_true', help="Save the best parameters to disk as measured on the val set, and produce predictions for the test set.")
     parser.add_argument('--analysis', action='store_true')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--n_iter', type=int, default=3)
@@ -201,10 +201,11 @@ if __name__ == '__main__':
     n_vocab = len(text_encoder.encoder)
 
     print("Encoding dataset...")
-    ((trX1, trX2, trX3, trY),
-     (vaX1, vaX2, vaX3, vaY),
-     (teX1, teX2, teX3)) = encode_dataset(*rocstories(data_dir, n_valid=args.n_valid),
-                                          encoder=text_encoder)
+    # ((trX1, trX2, trX3, trY),
+    #  (vaX1, vaX2, vaX3, vaY),
+    #  (teX1, teX2, teX3)) = encode_dataset(*rocstories(data_dir, n_valid=args.n_valid),
+    #                                       encoder=text_encoder)
+    ((trX, trY), (vaX, vaY)) = encode_dataset(*)
     encoder['_start_'] = len(encoder)
     encoder['_delimiter_'] = len(encoder)
     encoder['_classify_'] = len(encoder)
@@ -230,7 +231,8 @@ if __name__ == '__main__':
     n_batch_train = args.n_batch * max(n_gpu, 1)
     n_updates_total = (n_train // n_batch_train) * args.n_iter
 
-    dh_model = DoubleHeadModel(args, clf_token, 'multiple_choice', vocab, n_ctx)
+    # dh_model = DoubleHeadModel(args, clf_token, 'multiple_choice', vocab, n_ctx)
+    dh_model = DoubleHeadModel(args, clf_token, ('classification', 2), vocab, n_ctx)
 
     criterion = nn.CrossEntropyLoss(reduce=False)
     model_opt = OpenAIAdam(dh_model.parameters(),
@@ -244,14 +246,19 @@ if __name__ == '__main__':
                            l2=args.l2,
                            vector_l2=args.vector_l2,
                            max_grad_norm=args.max_grad_norm)
-    compute_loss_fct = MultipleChoiceLossCompute(criterion,
+    # compute_loss_fct = MultipleChoiceLossCompute(criterion,
+    #                                              criterion,
+    #                                              args.lm_coef,
+    #                                              model_opt)
+    compute_loss_fct = ClassificationLossCompute(criterion,
                                                  criterion,
                                                  args.lm_coef,
                                                  model_opt)
+
     load_openai_pretrained_model(dh_model.transformer, n_ctx=n_ctx, n_special=n_special)
 
     dh_model.to(device)
-    dh_model = nn.DataParallel(dh_model)
+    # dh_model = nn.DataParallel(dh_model)
 
     n_updates = 0
     n_epochs = 0
